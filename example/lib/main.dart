@@ -121,6 +121,13 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
+    String _toString(Map<String, double> map) {
+      if (map == null) {
+        return null;
+      }
+      return "lat: ${map['latitude']}, lon: ${map['longitude']}";
+    }
+
     final body = ListView(
       children: <Widget>[
         ListTile(
@@ -129,11 +136,11 @@ class _MyAppState extends State<MyApp> {
         ),
         ListTile(
           title: Text('Location'),
-          subtitle: Text(_location ?? '-'),
+          subtitle: Text(_toString(_location) ?? '-'),
         ),
         ListTile(
           title: Text('Current'),
-          subtitle: Text(_currentLocation ?? '-'),
+          subtitle: Text(_toString(_currentLocation) ?? '-'),
         ),
       ],
     );

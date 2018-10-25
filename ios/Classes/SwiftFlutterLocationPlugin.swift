@@ -32,7 +32,7 @@ enum Error {
 }
 
 
-public class SwiftLocationPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, CLLocationManagerDelegate {
+public class SwiftFlutterLocationPlugin: NSObject, FlutterPlugin, FlutterStreamHandler, CLLocationManagerDelegate {
     private let manager = CLLocationManager()
     
     private var locationRequested = false
@@ -52,7 +52,7 @@ public class SwiftLocationPlugin: NSObject, FlutterPlugin, FlutterStreamHandler,
         let channel = FlutterMethodChannel(name: Channel.location, binaryMessenger: registrar.messenger())
         let event = FlutterEventChannel(name: Channel.locationEvent, binaryMessenger: registrar.messenger())
         
-        let instance = SwiftLocationPlugin()
+        let instance = SwiftFlutterLocationPlugin()
         registrar.addMethodCallDelegate(instance, channel: channel)
         event.setStreamHandler(instance)
     }
