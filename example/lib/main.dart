@@ -1,8 +1,9 @@
-import 'package:flutter/material.dart';
 import 'dart:async';
 
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_location/flutter_location.dart';
+import 'package:flutter_location/permission.dart';
 
 void main() => runApp(new MyApp());
 
@@ -12,45 +13,137 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  String _platformVersion = 'Unknown';
+  String _permission;
+  Map<String, double> _location;
+  Map<String, double> _currentLocation;
 
   @override
   void initState() {
     super.initState();
-    initPlatformState();
+    initPermission();
+    initLocation();
+    initCurrentLocation();
   }
 
-  // Platform messages are asynchronous, so we initialize in an async method.
-  Future<void> initPlatformState() async {
-    String platformVersion;
-    // Platform messages may fail, so we use a try/catch PlatformException.
+  Future<void> initPermission() async {
     try {
-      platformVersion = await FlutterLocation.platformVersion;
-    } on PlatformException {
-      platformVersion = 'Failed to get platform version.';
+      await _initPermission();
+    } on PlatformException catch (e) {
+      print('Permission error: $e');
+    }
+  }
+
+  Future<void> initLocation() async {
+    try {
+      await _initLocation();
+    } on PlatformException catch (e) {
+      print('Location error: ${e.message}');
+    }
+  }
+
+  Future<void> initCurrentLocation() async {
+    try {
+      await _initCurrentLocation();
+    } on PlatformException catch (e) {
+      print('Current location error: ${e.message}');
+    }
+  }
+
+  static get _waitForUser => Duration(seconds: 1);
+
+  Future<void> _initPermission() async {
+    Permission locationPermission;
+
+    //  Location.permissionLevel can throw PlatformException
+    locationPermission = await FlutterLocation.permissionLevel;
+    if (locationPermission == Permission.NOT_DETERMINED) {
+      // Waiting for the user to authorized or denied permission
+      return await Future.delayed(_waitForUser, _initPermission);
+    }
+    if (!mounted) {
+      // nothing to do here
+      return;
+    }
+    String locationPermissionDesc;
+    if (locationPermission == Permission.DENIED) {
+      locationPermissionDesc = "Denied";
+    } else if (locationPermission == Permission.AUTHORIZED) {
+      locationPermissionDesc = "Authorized";
+    } else {
+      locationPermissionDesc = "Error";
+    }
+    print('Permission $_permission -> $locationPermissionDesc');
+    setState(() {
+      _permission = locationPermissionDesc;
+    });
+  }
+
+  Future<void> _initLocation() async {
+    Permission locationPermission;
+    //  Location.permissionLevel can throw PlatformException
+    locationPermission = await FlutterLocation.permissionLevel;
+    if (locationPermission == Permission.NOT_DETERMINED) {
+      // Waiting for the user to authorized or denied permission
+      return await Future.delayed(_waitForUser, _initLocation);
+    }
+    if (locationPermission == Permission.DENIED || !mounted) {
+      // nothing to do here
+      return;
     }
 
-    // If the widget was removed from the tree while the asynchronous platform
-    // message was in flight, we want to discard the reply rather than calling
-    // setState to update our non-existent appearance.
-    if (!mounted) return;
-
+    Map<String, double> location = await FlutterLocation.location;
     setState(() {
-      _platformVersion = platformVersion;
+      _location = location;
     });
+  }
+
+  Future<void> _initCurrentLocation() async {
+    Permission locationPermission;
+    //  Location.permissionLevel can throw PlatformException
+    locationPermission = await FlutterLocation.permissionLevel;
+    if (locationPermission == Permission.NOT_DETERMINED) {
+      // Waiting for the user to authorized or denied permission
+      return await Future.delayed(_waitForUser, _initCurrentLocation);
+    }
+    // if user denied permissions, or component is not mounted return
+    if (locationPermission == Permission.DENIED || !mounted) {
+      return;
+    }
+    FlutterLocation.onLocationChange.listen(
+      (location) {
+        print('Current location changes to: $location');
+        setState(() {
+          _currentLocation = location;
+        });
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final body = ListView(
+      children: <Widget>[
+        ListTile(
+          title: Text('Permission'),
+          subtitle: Text(_permission ?? '-'),
+        ),
+        ListTile(
+          title: Text('Location'),
+          subtitle: Text(_location ?? '-'),
+        ),
+        ListTile(
+          title: Text('Current'),
+          subtitle: Text(_currentLocation ?? '-'),
+        ),
+      ],
+    );
+
     return new MaterialApp(
       home: new Scaffold(
-        appBar: new AppBar(
-          title: const Text('Plugin example app'),
-        ),
-        body: new Center(
-          child: new Text('Running on: $_platformVersion\n'),
-        ),
-      ),
+          appBar: new AppBar(
+            title: const Text('Location Plugin example'),
+          ),
+          body: body),
     );
   }
 }
