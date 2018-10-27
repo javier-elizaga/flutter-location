@@ -112,11 +112,13 @@ public class SwiftFlutterLocationPlugin: NSObject, FlutterPlugin, FlutterStreamH
         guard let location: CLLocation = locations.last else {
             return pendingResult(Error.locationUnavailable)
         }
-        let latitude = Double(location.coordinate.latitude)
-        let longitude = Double(location.coordinate.longitude)
+        
         let lastLocation = [
-            "latitude": latitude,
-            "longitude": longitude
+            "latitude": Double(location.coordinate.latitude),
+            "longitude": Double(location.coordinate.longitude),
+            "accuracy": Double(location.horizontalAccuracy),
+            "altitude": Double(location.altitude),
+            "speed": Double(location.speed)
         ]
         
         if locationRequested {

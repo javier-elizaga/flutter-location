@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/services.dart';
 
 import 'permission.dart';
+import 'location.dart';
 
 class Channel {
   static const location = 'javier-elizaga.location';
@@ -18,8 +19,7 @@ class FlutterLocation {
   static const MethodChannel _channel = const MethodChannel(Channel.location);
   static const EventChannel _eventChannel =
       const EventChannel(Channel.locationEvent);
-
-  static Stream<Map<String, double>> _onLocationChanged;
+  static Stream<Location> _onLocationChanged;
 
   static Future<Permission> get permissionLevel async {
     String permission = await _channel.invokeMethod(Method.permission);
@@ -29,26 +29,19 @@ class FlutterLocation {
         orElse: () => Permission.NOT_DETERMINED);
   }
 
-  static Future<Map<String, double>> get location async {
+  static Future<Location> get location async {
     final location = await _channel.invokeMethod(Method.location);
     print('Location: $location');
-    return toLocation(location);
+    return Location.fromJson(location);
   }
 
-  static Stream<Map<String, double>> get onLocationChange {
+  static Stream<Location> get onLocationChanged {
     if (_onLocationChanged == null) {
       _onLocationChanged = _eventChannel.receiveBroadcastStream().map((data) {
         print('LocationData: $data');
-        return toLocation(data);
+        return Location.fromJson(data);
       });
     }
     return _onLocationChanged;
-  }
-
-  static Map<String, double> toLocation(location) {
-    return {
-      'longitude': location['longitude'] ?? 0.0,
-      'latitude': location['latitude'] ?? 0.0,
-    };
   }
 }

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_location/flutter_location.dart';
 import 'package:flutter_location/permission.dart';
+import 'package:flutter_location/location.dart';
 
 void main() => runApp(new MyApp());
 
@@ -14,8 +15,8 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   String _permission;
-  Map<String, double> _location;
-  Map<String, double> _currentLocation;
+  Location _location;
+  Location _currentLocation;
 
   @override
   void initState() {
@@ -91,10 +92,8 @@ class _MyAppState extends State<MyApp> {
       return;
     }
 
-    Map<String, double> location = await FlutterLocation.location;
-    setState(() {
-      _location = location;
-    });
+    Location location = await FlutterLocation.location;
+    setState(() => _location = location);
   }
 
   Future<void> _initCurrentLocation() async {
@@ -109,25 +108,16 @@ class _MyAppState extends State<MyApp> {
     if (locationPermission == Permission.DENIED || !mounted) {
       return;
     }
-    FlutterLocation.onLocationChange.listen(
+    FlutterLocation.onLocationChanged.listen(
       (location) {
         print('Current location changes to: $location');
-        setState(() {
-          _currentLocation = location;
-        });
+        setState(() => _currentLocation = location);
       },
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    String _toString(Map<String, double> map) {
-      if (map == null) {
-        return null;
-      }
-      return "lat: ${map['latitude']}, lon: ${map['longitude']}";
-    }
-
     final body = ListView(
       children: <Widget>[
         ListTile(
@@ -136,11 +126,11 @@ class _MyAppState extends State<MyApp> {
         ),
         ListTile(
           title: Text('Location'),
-          subtitle: Text(_toString(_location) ?? '-'),
+          subtitle: Text(_location?.toString() ?? '-'),
         ),
         ListTile(
           title: Text('Current'),
-          subtitle: Text(_toString(_currentLocation) ?? '-'),
+          subtitle: Text(_currentLocation?.toString() ?? '-'),
         ),
       ],
     );
