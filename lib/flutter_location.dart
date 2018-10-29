@@ -23,7 +23,6 @@ class FlutterLocation {
 
   static Future<Permission> get permissionLevel async {
     String permission = await _channel.invokeMethod(Method.permission);
-    print('Location permission: $permission');
     return Permission.values.firstWhere(
         (p) => p.toString() == 'Permission.$permission',
         orElse: () => Permission.NOT_DETERMINED);
@@ -31,14 +30,12 @@ class FlutterLocation {
 
   static Future<Location> get location async {
     final location = await _channel.invokeMethod(Method.location);
-    print('Location: $location');
     return Location.fromJson(location);
   }
 
   static Stream<Location> get onLocationChanged {
     if (_onLocationChanged == null) {
       _onLocationChanged = _eventChannel.receiveBroadcastStream().map((data) {
-        print('LocationData: $data');
         return Location.fromJson(data);
       });
     }

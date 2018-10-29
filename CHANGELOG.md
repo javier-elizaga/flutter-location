@@ -14,3 +14,7 @@ Bug fixing
 
 Now Location is a class instead of generic Map<String, double>
 Documentation is improved
+
+## 0.0.5
+
+Removes print statements
