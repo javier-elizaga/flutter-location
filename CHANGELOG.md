@@ -18,3 +18,7 @@ Documentation is improved
 ## 0.0.5
 
 Adds android support, adds requestPermission, renames permissionLevel to permission
+
+## 0.0.6
+
+Bug fixing

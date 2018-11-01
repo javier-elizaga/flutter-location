@@ -80,16 +80,18 @@ class FlutterLocationPlugin(val activity: Activity) : MethodCallHandler, EventCh
      * Request permission callback
      */
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>?, grantResults: IntArray?): Boolean {
+        var result = false
         if (requestCode == requestCode && permissions?.size == 1 && grantResults?.size == 1) {
             if (permissions[0] == Manifest.permission.ACCESS_FINE_LOCATION) {
                 permission = when (grantResults?.get(0)) {
                     PackageManager.PERMISSION_GRANTED -> Permission.AUTHORIZED
                     else -> Permission.DENIED
                 }
-                return true
+                permissionRequested = false
+                result = true
             }
         }
-        return false
+        return result
     }
 
     companion object {
@@ -140,16 +142,17 @@ class FlutterLocationPlugin(val activity: Activity) : MethodCallHandler, EventCh
     }
 
     private fun requestPermissions(result: Result) {
+        var requested = false
         val location = ActivityCompat.checkSelfPermission(activity,  Manifest.permission.ACCESS_FINE_LOCATION)
         if (location == PackageManager.PERMISSION_DENIED) {
             if (!permissionRequested) {
                 permissionRequested = true
                 permission = Permission.NOT_DETERMINED
                 ActivityCompat.requestPermissions(activity, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), requestCode)
-                return result.success(true)    
+                requested = true
             }
         }
-        result.success(false)
+        result.success(requested)
     }
 
 
