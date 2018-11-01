@@ -10,6 +10,7 @@ enum Channel {
 enum Method {
     static let permission = "permission"
     static let location = "location"
+    static let request_permissions = "requestPermissions"
 }
 
 enum Permission {
@@ -36,16 +37,15 @@ public class SwiftFlutterLocationPlugin: NSObject, FlutterPlugin, FlutterStreamH
     private let manager = CLLocationManager()
     
     private var locationRequested = false
-    private var pendingResult: FlutterResult!
+    private var pendingResult: FlutterResult?
     
-    private var eventListening = false;
-    private var eventSink: FlutterEventSink!
+    private var eventListening = false
+    private var eventSink: FlutterEventSink?
 
     public override init() {
         super.init()
         manager.delegate = self
         manager.desiredAccuracy = kCLLocationAccuracyBest
-        manager.requestWhenInUseAuthorization()
     }
 
     public static func register(with registrar: FlutterPluginRegistrar) {
@@ -63,8 +63,19 @@ public class SwiftFlutterLocationPlugin: NSObject, FlutterPlugin, FlutterStreamH
             self.permission(with: result)
         case Method.location:
             self.location(with: result)
+        case Method.request_permissions:
+            self.requestLocations(with: result)
         default:
             result(Error.unknown(method: call.method))
+        }
+    }
+    
+    private func requestLocations(with result: @escaping FlutterResult) {
+        if (CLLocationManager.authorizationStatus() == .notDetermined) {
+            manager.requestWhenInUseAuthorization()
+            result(true)
+        } else {
+            result(false)
         }
     }
     
@@ -110,7 +121,8 @@ public class SwiftFlutterLocationPlugin: NSObject, FlutterPlugin, FlutterStreamH
     // location delegate
     public func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let location: CLLocation = locations.last else {
-            return pendingResult(Error.locationUnavailable)
+            pendingResult?(Error.locationUnavailable)
+            return
         }
         
         let lastLocation = [
@@ -123,11 +135,11 @@ public class SwiftFlutterLocationPlugin: NSObject, FlutterPlugin, FlutterStreamH
         
         if locationRequested {
             locationRequested = false
-            pendingResult(lastLocation)
+            pendingResult?(lastLocation)
         }
         
         if eventListening {
-            self.eventSink(lastLocation);
+            eventSink?(lastLocation);
         }
         
         if !locationRequested && !eventListening {

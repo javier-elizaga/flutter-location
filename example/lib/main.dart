@@ -1,128 +1,81 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_location/flutter_location.dart';
 import 'package:flutter_location/permission.dart';
 import 'package:flutter_location/location.dart';
 
-void main() => runApp(new MyApp());
+void main() => runApp(MyApp());
 
 class MyApp extends StatefulWidget {
   @override
-  _MyAppState createState() => new _MyAppState();
+  _MyAppState createState() => _MyAppState();
 }
 
 class _MyAppState extends State<MyApp> {
-  String _permission;
+  Permission _permission = Permission.NOT_DETERMINED;
   Location _location;
   Location _currentLocation;
 
   @override
   void initState() {
     super.initState();
-    initPermission();
     initLocation();
-    initCurrentLocation();
   }
 
-  Future<void> initPermission() async {
-    try {
-      await _initPermission();
-    } on PlatformException catch (e) {
-      print('Permission error: $e');
+  Future<Permission> initPermission() async {
+    Permission permission;
+    bool isDetermined = false;
+    await FlutterLocation.requestPermission;
+    while (!isDetermined) {
+      permission = await FlutterLocation.permission;
+      if (permission == Permission.NOT_DETERMINED) {
+        await Future.delayed(_waitForUser);
+      } else {
+        isDetermined = true;
+      }
     }
+    return permission;
   }
 
-  Future<void> initLocation() async {
-    try {
-      await _initLocation();
-    } on PlatformException catch (e) {
-      print('Location error: ${e.message}');
+  void initLocation() async {
+    Permission permission;
+    permission = await initPermission();
+    Location location;
+    if (permission == Permission.AUTHORIZED) {
+      location = await FlutterLocation.location;
+      FlutterLocation.onLocationChanged.listen(
+        (location) {
+          setState(() => this._currentLocation = location);
+        },
+      );
     }
-  }
-
-  Future<void> initCurrentLocation() async {
-    try {
-      await _initCurrentLocation();
-    } on PlatformException catch (e) {
-      print('Current location error: ${e.message}');
-    }
+    setState(() {
+      this._permission = permission;
+      this._location = location;
+    });
   }
 
   static get _waitForUser => Duration(seconds: 1);
 
-  Future<void> _initPermission() async {
-    Permission locationPermission;
-
-    //  Location.permissionLevel can throw PlatformException
-    locationPermission = await FlutterLocation.permissionLevel;
-    if (locationPermission == Permission.NOT_DETERMINED) {
-      // Waiting for the user to authorized or denied permission
-      return await Future.delayed(_waitForUser, _initPermission);
+  String init() {
+    String permissionDesc = '-';
+    if (_permission == Permission.AUTHORIZED) {
+      permissionDesc = 'Authorized';
+    } else if (_permission == Permission.DENIED) {
+      permissionDesc = 'Denied';
     }
-    if (!mounted) {
-      // nothing to do here
-      return;
-    }
-    String locationPermissionDesc;
-    if (locationPermission == Permission.DENIED) {
-      locationPermissionDesc = "Denied";
-    } else if (locationPermission == Permission.AUTHORIZED) {
-      locationPermissionDesc = "Authorized";
-    } else {
-      locationPermissionDesc = "Error";
-    }
-    print('Permission $_permission -> $locationPermissionDesc');
-    setState(() {
-      _permission = locationPermissionDesc;
-    });
-  }
-
-  Future<void> _initLocation() async {
-    Permission locationPermission;
-    //  Location.permissionLevel can throw PlatformException
-    locationPermission = await FlutterLocation.permissionLevel;
-    if (locationPermission == Permission.NOT_DETERMINED) {
-      // Waiting for the user to authorized or denied permission
-      return await Future.delayed(_waitForUser, _initLocation);
-    }
-    if (locationPermission == Permission.DENIED || !mounted) {
-      // nothing to do here
-      return;
-    }
-
-    Location location = await FlutterLocation.location;
-    setState(() => _location = location);
-  }
-
-  Future<void> _initCurrentLocation() async {
-    Permission locationPermission;
-    //  Location.permissionLevel can throw PlatformException
-    locationPermission = await FlutterLocation.permissionLevel;
-    if (locationPermission == Permission.NOT_DETERMINED) {
-      // Waiting for the user to authorized or denied permission
-      return await Future.delayed(_waitForUser, _initCurrentLocation);
-    }
-    // if user denied permissions, or component is not mounted return
-    if (locationPermission == Permission.DENIED || !mounted) {
-      return;
-    }
-    FlutterLocation.onLocationChanged.listen(
-      (location) {
-        print('Current location changes to: $location');
-        setState(() => _currentLocation = location);
-      },
-    );
+    return permissionDesc;
   }
 
   @override
   Widget build(BuildContext context) {
+    String permissionDesc = init();
     final body = ListView(
       children: <Widget>[
         ListTile(
           title: Text('Permission'),
-          subtitle: Text(_permission ?? '-'),
+          subtitle: Text(permissionDesc),
         ),
         ListTile(
           title: Text('Location'),
@@ -135,9 +88,9 @@ class _MyAppState extends State<MyApp> {
       ],
     );
 
-    return new MaterialApp(
-      home: new Scaffold(
-          appBar: new AppBar(
+    return MaterialApp(
+      home: Scaffold(
+          appBar: AppBar(
             title: const Text('Location Plugin example'),
           ),
           body: body),

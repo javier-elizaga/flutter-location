@@ -13,15 +13,15 @@ class Channel {
 class Method {
   static const permission = 'permission';
   static const location = 'location';
+  static const request_permissions = "requestPermissions";
 }
 
 class FlutterLocation {
   static const MethodChannel _channel = const MethodChannel(Channel.location);
-  static const EventChannel _eventChannel =
-      const EventChannel(Channel.locationEvent);
+  static const EventChannel _event = const EventChannel(Channel.locationEvent);
   static Stream<Location> _onLocationChanged;
 
-  static Future<Permission> get permissionLevel async {
+  static Future<Permission> get permission async {
     String permission = await _channel.invokeMethod(Method.permission);
     return Permission.values.firstWhere(
         (p) => p.toString() == 'Permission.$permission',
@@ -33,9 +33,13 @@ class FlutterLocation {
     return Location.fromJson(location);
   }
 
+  static Future<bool> get requestPermission async {
+    return await _channel.invokeMethod(Method.request_permissions);
+  }
+
   static Stream<Location> get onLocationChanged {
     if (_onLocationChanged == null) {
-      _onLocationChanged = _eventChannel.receiveBroadcastStream().map((data) {
+      _onLocationChanged = _event.receiveBroadcastStream().map((data) {
         return Location.fromJson(data);
       });
     }

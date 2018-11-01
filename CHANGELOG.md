@@ -17,4 +17,4 @@ Documentation is improved
 
 ## 0.0.5
 
-Removes print statements
+Adds android support, adds requestPermission, renames permissionLevel to permission
